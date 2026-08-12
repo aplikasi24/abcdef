@@ -9774,14 +9774,16 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                         return `<strong>${p1}</strong>`;
                     });
 
-                    // Format Pilihan Ganda options into 2x2 grid (mendukung A-E)
-                    htmlResult = htmlResult.replace(/(^|\n)\s*(?:\*\*|)?([Aa])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Bb])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Cc])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Dd])[.)](?:\*\*|)?\s+(.*?)(?:\s*\n+\s*(?:\*\*|)?([Ee])[.)](?:\*\*|)?\s+(.*?))?(?=\n|$)/gm, 
+                    // Format Pilihan Ganda options into 2x2 grid (A-E)
+                    htmlResult = htmlResult.replace(/(^|\n)\s*(?:\*\*|)?([Aa])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Bb])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Cc])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Dd])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Ee])[.)](?:\*\*|)?\s+(.*?)(?=\n|$)/gm, 
                     function(match, prefix, lA, txtA, lB, txtB, lC, txtC, lD, txtD, lE, txtE) {
-                        let eStr = '';
-                        if (lE && txtE) {
-                            eStr = `<div>${lE.toLowerCase()}. ${txtE.trim()}</div>`;
-                        }
-                        return `${prefix}<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 8px; margin-bottom: 16px; padding-left: 16px; width: 100%;"><div>${lA.toLowerCase()}. ${txtA.trim()}</div><div>${lB.toLowerCase()}. ${txtB.trim()}</div><div>${lC.toLowerCase()}. ${txtC.trim()}</div><div>${lD.toLowerCase()}. ${txtD.trim()}</div>${eStr}</div>`;
+                        return `${prefix}<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 8px; margin-bottom: 16px; padding-left: 16px; width: 100%;"><div><div style="margin-bottom: 4px;"><strong>${lA.toUpperCase()}.</strong> ${txtA.trim()}</div><div style="margin-bottom: 4px;"><strong>${lB.toUpperCase()}.</strong> ${txtB.trim()}</div><div style="margin-bottom: 4px;"><strong>${lC.toUpperCase()}.</strong> ${txtC.trim()}</div></div><div><div style="margin-bottom: 4px;"><strong>${lD.toUpperCase()}.</strong> ${txtD.trim()}</div><div style="margin-bottom: 4px;"><strong>${lE.toUpperCase()}.</strong> ${txtE.trim()}</div></div></div>`;
+                    });
+
+                    // Format Pilihan Ganda options into 2x2 grid (A-D saja)
+                    htmlResult = htmlResult.replace(/(^|\n)\s*(?:\*\*|)?([Aa])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Bb])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Cc])[.)](?:\*\*|)?\s+(.*?)\s*\n+\s*(?:\*\*|)?([Dd])[.)](?:\*\*|)?\s+(.*?)(?=\n|$)/gm, 
+                    function(match, prefix, lA, txtA, lB, txtB, lC, txtC, lD, txtD) {
+                        return `${prefix}<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 8px; margin-bottom: 16px; padding-left: 16px; width: 100%;"><div><div style="margin-bottom: 4px;"><strong>${lA.toUpperCase()}.</strong> ${txtA.trim()}</div><div style="margin-bottom: 4px;"><strong>${lB.toUpperCase()}.</strong> ${txtB.trim()}</div></div><div><div style="margin-bottom: 4px;"><strong>${lC.toUpperCase()}.</strong> ${txtC.trim()}</div><div style="margin-bottom: 4px;"><strong>${lD.toUpperCase()}.</strong> ${txtD.trim()}</div></div></div>`;
                     });
 
                     // Wrap blocks in avoid-page-break containers
