@@ -1,3 +1,26 @@
+        // --- ANTI-DOWNGRADE PERISAI (SHIELD) ---
+        // Mencegah Apps Script menimpa cache dengan versi lama
+        (function() {
+            if (window._shieldActive) return;
+            window._shieldActive = true;
+            const originalSetItem = localStorage.setItem;
+            localStorage.setItem = function(key, value) {
+                if (key === 'app_logic_code' && typeof value === 'string') {
+                    // Jika kode yang mau disimpan TIDAK memiliki overlay grid baru, berarti itu versi lama
+                    if (!value.includes('mobileMenuLainnyaOverlay')) {
+                        console.warn("🛡️ [SHIELD] Apps Script (Google Server) mencoba mengembalikan versi lama! Blokir pembaruan cache.");
+                        // Sembunyikan notifikasi update jika muncul
+                        setTimeout(() => {
+                            const toast = document.getElementById('update-toast');
+                            if (toast) toast.remove();
+                        }, 500);
+                        return; // BLOKIR! Jangan disimpan.
+                    }
+                }
+                originalSetItem.apply(this, arguments);
+            };
+        })();
+
         // --- 1. PWA Service Worker Registration ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
