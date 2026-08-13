@@ -222,7 +222,10 @@
                     btn = nav.children[index];
                 } else {
                     btn = document.createElement('button');
-                    btn.onclick = () => {
+                    btn.type = 'button';
+                    btn.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         if (menu.id === 'menu') {
                             if(window.openMenuLainnya) window.openMenuLainnya();
                         } else {
@@ -247,7 +250,15 @@
                 modal.setAttribute('data-state', 'closed');
                 modal.style.opacity = '0';
                 modal.style.pointerEvents = 'none';
-                modal.onclick = (e) => { if(e.target === modal) window.closeMenuLainnya(); };
+                let canClose = false;
+                setTimeout(() => canClose = true, 400); // Mencegah ghost click atau double tap menutup modal
+                modal.addEventListener('click', (e) => { 
+                    if(e.target === modal && canClose) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.closeMenuLainnya(); 
+                    }
+                });
 
                 const gridMenus = appMenus.filter(m => !['dashboard', 'presensi', 'siswa', 'nilai'].includes(m.id));
                 const gridHtml = gridMenus.map(m => {
