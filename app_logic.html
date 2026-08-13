@@ -224,10 +224,7 @@
                     btn = document.createElement('button');
                     btn.onclick = () => {
                         if (menu.id === 'menu') {
-                            const sb = document.getElementById('sidebar');
-                            const ov = document.getElementById('sidebar-overlay');
-                            if (sb) sb.classList.remove('-translate-x-full');
-                            if (ov) { ov.classList.remove('hidden'); ov.classList.add('flex'); }
+                            if(window.openMenuLainnya) window.openMenuLainnya();
                         } else {
                             window.navigateTo(menu.id);
                         }
@@ -240,6 +237,80 @@
                 btn.innerHTML = `<i class="fas ${menu.icon} text-lg transition-colors duration-300"></i><span style="font-size:10px;font-weight:600;white-space:nowrap;" class="transition-colors duration-300">${menu.name}</span>`;
             });
         }
+
+        window.openMenuLainnya = () => {
+            let modal = document.getElementById('mobileMenuLainnyaOverlay');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'mobileMenuLainnyaOverlay';
+                modal.className = 'fixed inset-0 z-[100] modal-overlay transition-opacity duration-300 flex flex-col justify-end';
+                modal.setAttribute('data-state', 'closed');
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                modal.onclick = (e) => { if(e.target === modal) window.closeMenuLainnya(); };
+
+                const gridMenus = appMenus.filter(m => !['dashboard', 'presensi', 'siswa', 'nilai'].includes(m.id));
+                const gridHtml = gridMenus.map(m => {
+                    let badgeHtml = '';
+                    if (m.id === 'pesan') {
+                        const unreadCount = Math.max(0, (db.pesan_info ? db.pesan_info.length : 0) - (db.pengaturan && db.pengaturan.read_pesan_count ? db.pengaturan.read_pesan_count : 0));
+                        if (unreadCount > 0) {
+                            badgeHtml = `<span class="absolute -top-1 -right-2 bg-amber-400 text-slate-900 text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-sm">${unreadCount}</span>`;
+                        }
+                    }
+                    return `
+                        <div onclick="window.closeMenuLainnya(); window.navigateTo('${m.id}')" class="flex flex-col items-center gap-3 cursor-pointer group py-2">
+                            <div class="relative flex items-center justify-center transition-transform transform group-hover:scale-110">
+                                <i class="fas ${m.icon} text-3xl text-primary-500"></i>
+                                ${badgeHtml}
+                            </div>
+                            <span class="text-[11px] font-medium text-slate-700 text-center leading-tight w-full">${m.name}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                modal.innerHTML = `
+                  <div class="bg-white w-full rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transform transition-transform duration-300 translate-y-full flex flex-col" style="max-height: 85vh;" id="mobileMenuLainnyaContent">
+                    <div class="p-6 pb-2">
+                      <div class="flex items-center gap-3 mb-4">
+                        <i class="fas fa-th text-navy-900 text-xl"></i>
+                        <h3 class="font-bold text-navy-900 text-xl">Menu Lainnya</h3>
+                      </div>
+                      <button onclick="window.closeMenuLainnya()" class="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors">
+                        <i class="fas fa-times text-sm"></i>
+                      </button>
+                    </div>
+                    <div class="p-6 pt-4 overflow-y-auto custom-scrollbar flex-1 pb-12">
+                       <div class="grid grid-cols-3 gap-y-8 gap-x-2">
+                          ${gridHtml}
+                       </div>
+                    </div>
+                  </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+            modal.setAttribute('data-state', 'open');
+            requestAnimationFrame(() => {
+                const content = document.getElementById('mobileMenuLainnyaContent');
+                if (content) content.style.transform = 'translateY(0)';
+            });
+        };
+
+        window.closeMenuLainnya = () => {
+            const modal = document.getElementById('mobileMenuLainnyaOverlay');
+            if (modal) {
+                const content = document.getElementById('mobileMenuLainnyaContent');
+                if (content) content.style.transform = 'translateY(100%)';
+                setTimeout(() => {
+                    modal.style.opacity = '0';
+                    modal.style.pointerEvents = 'none';
+                    modal.setAttribute('data-state', 'closed');
+                }, 300);
+            }
+        };
 
         window.dashboardState = { catatanPage: 0, tautanPage: 0 };
 
@@ -596,7 +667,7 @@
                                 <div class="w-2 h-2 rounded-full bg-green-400 mr-2"></div>
                                 ${settingSemester} ${settingTahunAjaran}
                             </div>
-                            <h1 class="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight">Halo, Selamat Datang ${namaUser} 👋</h1>
+                            <h1 class="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight">Halo, Selamat Datang ${namaUser} ??</h1>
                             <p class="text-blue-100 text-base md:text-lg max-w-2xl">Berikut adalah ringkasan & perkembangan <strong>${settingKelas} (${sekolahUser})</strong> hari ini.</p>
                         </div>
                         ${jadwalHtml}
@@ -834,10 +905,10 @@
                 if(sortedNames.length > 60) {
                     res.push(`... dan ${sortedNames.length - 60} lainnya`);
                     res.push(``);
-                    res.push(`👉 KLIK GRAFIK UNTUK DAFTAR LENGKAP`);
+                    res.push(`?? KLIK GRAFIK UNTUK DAFTAR LENGKAP`);
                 } else if(sortedNames.length > 0) {
                     res.push(``);
-                    res.push(`👉 Klik grafik untuk melihat lebih jelas`);
+                    res.push(`?? Klik grafik untuk melihat lebih jelas`);
                 }
                 return res;
             };
@@ -5825,7 +5896,7 @@ Setelah semua baris terisi, tolong berikan kembali kepada saya file Excel terseb
             if(judul && deadline) {
                 const dateObj = new Date(deadline);
                 const deadlineStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                const fullInfo = `⏰ Deadline: <span class="font-bold text-red-600">${deadlineStr}</span>`;
+                const fullInfo = `? Deadline: <span class="font-bold text-red-600">${deadlineStr}</span>`;
                 
                 db.tugas.push({id: Date.now(), judul, info: fullInfo, status: "diberikan"});
                 saveDB();
@@ -5837,14 +5908,14 @@ Setelah semua baris terisi, tolong berikan kembali kepada saya file Excel terseb
             if(await showConfirm("Hapus tugas ini?")) { db.tugas = db.tugas.filter(m => m.id !== id); saveDB(); navigateTo('tugas'); }
         };
         window.shareTugasWA = (judul, info) => {
-            const defaultMsg = `Assalamualaikum wr. wb.\n\nBapak/Ibu wali murid yang kami hormati, mengingatkan kembali untuk tugas anak-anak kita:\n\n📚 *[tugas]*\n[deadline]\n\nMohon bimbingannya di rumah agar ananda dapat menyelesaikan tugas ini dengan baik. Terima kasih banyak atas perhatian dan kerja samanya. 🙏`;
+            const defaultMsg = `Assalamualaikum wr. wb.\n\nBapak/Ibu wali murid yang kami hormati, mengingatkan kembali untuk tugas anak-anak kita:\n\n?? *[tugas]*\n[deadline]\n\nMohon bimbingannya di rumah agar ananda dapat menyelesaikan tugas ini dengan baik. Terima kasih banyak atas perhatian dan kerja samanya. ??`;
             let template = db.pengaturan?.pesan_wa || defaultMsg;
             let pesan = template.replace(/\[tugas\]/gi, judul).replace(/\[deadline\]/gi, info);
             window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
         };
 
         window.openModalSettingWA = () => {
-            const defaultMsg = `Assalamualaikum wr. wb.\n\nBapak/Ibu wali murid yang kami hormati, mengingatkan kembali untuk tugas anak-anak kita:\n\n📚 *[tugas]*\n[deadline]\n\nMohon bimbingannya di rumah agar ananda dapat menyelesaikan tugas ini dengan baik. Terima kasih banyak atas perhatian dan kerja samanya. 🙏`;
+            const defaultMsg = `Assalamualaikum wr. wb.\n\nBapak/Ibu wali murid yang kami hormati, mengingatkan kembali untuk tugas anak-anak kita:\n\n?? *[tugas]*\n[deadline]\n\nMohon bimbingannya di rumah agar ananda dapat menyelesaikan tugas ini dengan baik. Terima kasih banyak atas perhatian dan kerja samanya. ??`;
             const currentMsg = db.pengaturan?.pesan_wa || defaultMsg;
             
             const modal = document.createElement('div');
@@ -6431,7 +6502,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                 saveDB();
             }
 
-            const emojis = ['😠', '🙁', '😐', '😊', '😍'];
+            const emojis = ['??', '??', '??', '??', '??'];
             const emojiHtml = emojis.map(e => `
                 <button onclick="window.setRefleksiEmoji('${e}')" class="p-3 text-3xl hover:scale-125 transition transform rounded-full ${window.refleksiTemp.emoji === e ? 'scale-125 shadow-lg ring-4 ring-blue-500 bg-blue-100' : 'filter grayscale hover:grayscale-0 opacity-50 hover:opacity-100'}">${e}</button>
             `).join('');
@@ -8652,7 +8723,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                 <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden transform scale-100 transition-all border border-slate-100">
                     <div class="p-6 text-center">
                         <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
-                            ${iconHtml || '<span class="text-4xl">💸</span>'}
+                            ${iconHtml || '<span class="text-4xl">??</span>'}
                         </div>
                         <h3 class="text-xl font-black text-slate-800 mb-2">Konfirmasi</h3>
                         <p class="text-slate-600 text-sm mb-6 leading-relaxed">${message}</p>
@@ -9360,7 +9431,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
         window.bayarSemuaKas = (dateStr) => {
             window.showModernConfirm(
                 "Gas auto-lunasin uang kas sekelas buat tanggal ini?",
-                '<span class="text-5xl">💸</span>',
+                '<span class="text-5xl">??</span>',
                 () => {
                     const nom = db.kas_kelas.nominal;
                     db.students.forEach(s => {
@@ -9413,7 +9484,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
         window.hapusPengeluaranKas = (id) => {
             window.showModernConfirm(
                 "Yakin mau menghapus riwayat pengeluaran kas ini?",
-                '<span class="text-5xl">💸</span>',
+                '<span class="text-5xl">??</span>',
                 () => {
                     db.kas_kelas.pengeluaran = db.kas_kelas.pengeluaran.filter(p => p.id !== id);
                     saveDB();
@@ -9481,7 +9552,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
         window.hapusPemasukanKas = (id) => {
             window.showModernConfirm(
                 "Yakin mau menghapus riwayat pemasukan ini?",
-                '<span class="text-5xl">💰</span>',
+                '<span class="text-5xl">??</span>',
                 () => {
                     db.kas_kelas.pemasukan_lain = db.kas_kelas.pemasukan_lain.filter(p => p.id !== id);
                     saveDB();
@@ -10777,7 +10848,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
             const currentUrl = window.location.href.toLowerCase();
             if (currentUrl.startsWith('file:///') && (currentUrl.includes('/temp/') || currentUrl.includes('/appdata/local/temp/') || currentUrl.includes('rar$') || currentUrl.includes('zip'))) {
                 setTimeout(() => {
-                    alert("⚠️ PERINGATAN PENTING! ⚠️\n\nSepertinya Anda menjalankan aplikasi ini LANGSUNG dari dalam file ZIP tanpa mengekstraknya terlebih dahulu.\n\nAkibatnya, Windows membuat folder sementara (Temp) yang baru setiap kali Anda membukanya, sehingga semua data yang Anda simpan akan SELALU HILANG saat Anda menutup browser!\n\nSOLUSI:\n1. Tutup browser ini.\n2. Klik Kanan pada file ZIP yang Anda unduh.\n3. Pilih 'Extract Here' (Ekstrak di sini) atau 'Extract All'.\n4. Buka file index.html dari folder hasil ekstraksi tersebut.\n\nDengan begitu, data Anda akan tersimpan secara permanen.");
+                    alert("?? PERINGATAN PENTING! ??\n\nSepertinya Anda menjalankan aplikasi ini LANGSUNG dari dalam file ZIP tanpa mengekstraknya terlebih dahulu.\n\nAkibatnya, Windows membuat folder sementara (Temp) yang baru setiap kali Anda membukanya, sehingga semua data yang Anda simpan akan SELALU HILANG saat Anda menutup browser!\n\nSOLUSI:\n1. Tutup browser ini.\n2. Klik Kanan pada file ZIP yang Anda unduh.\n3. Pilih 'Extract Here' (Ekstrak di sini) atau 'Extract All'.\n4. Buka file index.html dari folder hasil ekstraksi tersebut.\n\nDengan begitu, data Anda akan tersimpan secara permanen.");
                 }, 1000);
             }
         }
@@ -11330,7 +11401,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                 totalHarus += nominal;
                 totalBayar += terbayar;
                 
-                let status = kurang < 0 ? `LEBIH Rp ${Math.abs(kurang).toLocaleString('id-ID')} ✅` : (kurang === 0 ? 'LUNAS ✅' : (terbayar > 0 ? 'CICIL ⚠️' : 'BELUM BAYAR ❌'));
+                let status = kurang < 0 ? `LEBIH Rp ${Math.abs(kurang).toLocaleString('id-ID')} ?` : (kurang === 0 ? 'LUNAS ?' : (terbayar > 0 ? 'CICIL ??' : 'BELUM BAYAR ?'));
                 
                 let riwayat = (pk.riwayat_bayar && pk.riwayat_bayar[studentId] && pk.riwayat_bayar[studentId][item.id]) ? pk.riwayat_bayar[studentId][item.id] : [];
                 if (riwayat.length === 0 && terbayar > 0) {
