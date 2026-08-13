@@ -205,74 +205,6 @@
             { id: "menu",      name: "Menu",     icon: "fa-th" }
         ];
 
-        window.closeMobileGridMenu = function() {
-            let gridOverlay = document.getElementById('mobileGridMenuOverlay');
-            if (gridOverlay) {
-                gridOverlay.classList.add('opacity-0', 'translate-y-full');
-            }
-        };
-
-        function openMobileGridMenu() {
-            let gridOverlay = document.getElementById('mobileGridMenuOverlay');
-            if (!gridOverlay) {
-                gridOverlay = document.createElement('div');
-                gridOverlay.id = 'mobileGridMenuOverlay';
-                gridOverlay.className = 'fixed inset-0 z-[100] bg-white flex flex-col transition-all duration-300 opacity-0 translate-y-full';
-                
-                let header = document.createElement('div');
-                header.className = 'flex flex-col p-6 pt-8 shrink-0';
-                header.innerHTML = `
-                    <div class="flex items-center gap-3 mb-6">
-                        <i class="fas fa-th text-slate-800 text-2xl"></i>
-                        <h2 class="text-slate-800 font-bold text-2xl">Menu Lainnya</h2>
-                    </div>
-                    <button onclick="closeMobileGridMenu()" class="w-10 h-10 rounded-full border border-slate-200 bg-white shadow-sm flex items-center justify-center text-slate-700 hover:bg-slate-50 self-start transition-colors">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                
-                let gridContainer = document.createElement('div');
-                gridContainer.className = 'flex-1 overflow-y-auto p-6 pt-2 grid grid-cols-3 gap-y-8 gap-x-2 content-start pb-24';
-                
-                appMenus.forEach(m => {
-                    let btn = document.createElement('button');
-                    btn.className = 'flex flex-col items-center justify-start gap-2 group active:scale-95 transition-transform';
-                    btn.onclick = () => {
-                        closeMobileGridMenu();
-                        window.navigateTo(m.id);
-                    };
-                    
-                    let unreadCount = 0;
-                    if (m.id === 'pesan' && typeof db !== 'undefined') {
-                        if (!db.pengaturan) db.pengaturan = {};
-                        if (db.pengaturan.read_pesan_count === undefined) {
-                            db.pengaturan.read_pesan_count = db.pesan_info ? db.pesan_info.length : 0;
-                        }
-                        unreadCount = Math.max(0, (db.pesan_info ? db.pesan_info.length : 0) - db.pengaturan.read_pesan_count);
-                    }
-                    
-                    let badgeHtml = unreadCount > 0 ? `<span class="absolute -top-1 -right-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-1.5 min-w-[20px] h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">${unreadCount}</span>` : '';
-
-                    btn.innerHTML = `
-                        <div class="relative flex items-center justify-center h-14 w-14 transition-transform group-hover:-translate-y-1">
-                            <i class="fas ${m.icon} text-3xl text-primary-500 group-hover:text-primary-600 transition-colors"></i>
-                            ${badgeHtml}
-                        </div>
-                        <span class="text-xs text-slate-700 group-hover:text-primary-700 font-medium text-center leading-tight w-full max-w-[90px] mx-auto">${m.name}</span>
-                    `;
-                    gridContainer.appendChild(btn);
-                });
-                
-                gridOverlay.appendChild(header);
-                gridOverlay.appendChild(gridContainer);
-                document.body.appendChild(gridOverlay);
-            }
-            
-            requestAnimationFrame(() => {
-                gridOverlay.classList.remove('opacity-0', 'translate-y-full');
-            });
-        }
-
         function renderBottomNav() {
             const nav = document.getElementById('bottom-nav');
             if (!nav) return;
@@ -292,7 +224,10 @@
                     btn = document.createElement('button');
                     btn.onclick = () => {
                         if (menu.id === 'menu') {
-                            openMobileGridMenu();
+                            const sb = document.getElementById('sidebar');
+                            const ov = document.getElementById('sidebar-overlay');
+                            if (sb) sb.classList.remove('-translate-x-full');
+                            if (ov) { ov.classList.remove('hidden'); ov.classList.add('flex'); }
                         } else {
                             window.navigateTo(menu.id);
                         }
@@ -302,7 +237,7 @@
 
                 btn.className = 'flex flex-col items-center justify-center flex-1 min-w-0 py-1 gap-0.5 transition-colors duration-300 ' +
                     (isActive ? 'text-orange-400' : 'text-slate-400 hover:text-orange-300');
-                btn.innerHTML = \`<i class="fas ${menu.icon} text-lg transition-colors duration-300"></i><span style="font-size:10px;font-weight:600;white-space:nowrap;" class="transition-colors duration-300">${menu.name}</span>\`;
+                btn.innerHTML = `<i class="fas ${menu.icon} text-lg transition-colors duration-300"></i><span style="font-size:10px;font-weight:600;white-space:nowrap;" class="transition-colors duration-300">${menu.name}</span>`;
             });
         }
 
