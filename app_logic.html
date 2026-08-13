@@ -205,112 +205,183 @@
             { id: "menu",      name: "Menu",     icon: "fa-th" }
         ];
 
+        // Flag global untuk melacak status modal menu grid
+        window._menuLainnyaOpen = false;
+
         function renderBottomNav() {
             const nav = document.getElementById('bottom-nav');
             if (!nav) return;
             
-            const hasChildren = nav.children.length > 0;
-            if (!hasChildren) {
-                nav.innerHTML = '';
+            // Hanya buat tombol jika belum ada (mencegah duplikasi event handler)
+            if (nav.children.length >= bottomNavMenus.length) {
+                // Hanya update tampilan aktif/tidak aktif, JANGAN buat ulang
+                bottomNavMenus.forEach((menu, index) => {
+                    const btn = nav.children[index];
+                    if (!btn) return;
+                    const isActive = (menu.id !== 'menu') && (window.currentPage === menu.id);
+                    btn.className = 'flex flex-col items-center justify-center flex-1 min-w-0 py-1 gap-0.5 transition-colors duration-300 ' +
+                        (isActive ? 'text-orange-400' : 'text-slate-400 hover:text-orange-300');
+                });
+                return;
             }
 
-            bottomNavMenus.forEach((menu, index) => {
+            nav.innerHTML = '';
+            bottomNavMenus.forEach((menu) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.setAttribute('data-menu-id', menu.id);
+                
+                // Gunakan touchend untuk mobile agar lebih responsif & tanpa ghost click
+                let touchHandled = false;
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    touchHandled = true;
+                    if (menu.id === 'menu') {
+                        window.openMenuLainnya();
+                    } else {
+                        window.navigateTo(menu.id);
+                    }
+                    setTimeout(() => { touchHandled = false; }, 400);
+                }, { passive: false });
+                
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (touchHandled) return; // Sudah ditangani touchend
+                    if (menu.id === 'menu') {
+                        window.openMenuLainnya();
+                    } else {
+                        window.navigateTo(menu.id);
+                    }
+                });
+                
                 const isActive = (menu.id !== 'menu') && (window.currentPage === menu.id);
-                let btn;
-
-                if (hasChildren && nav.children[index]) {
-                    btn = nav.children[index];
-                } else {
-                    btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (menu.id === 'menu') {
-                            if(window.openMenuLainnya) window.openMenuLainnya();
-                        } else {
-                            window.navigateTo(menu.id);
-                        }
-                    };
-                    nav.appendChild(btn);
-                }
-
                 btn.className = 'flex flex-col items-center justify-center flex-1 min-w-0 py-1 gap-0.5 transition-colors duration-300 ' +
                     (isActive ? 'text-orange-400' : 'text-slate-400 hover:text-orange-300');
                 btn.innerHTML = `<i class="fas ${menu.icon} text-lg transition-colors duration-300"></i><span style="font-size:10px;font-weight:600;white-space:nowrap;" class="transition-colors duration-300">${menu.name}</span>`;
+                nav.appendChild(btn);
             });
         }
 
-        window.openMenuLainnya = () => {
+        // Fungsi untuk membuat/merender konten modal grid (dipanggil sekali)
+        function _createMenuLainnyaModal() {
             let modal = document.getElementById('mobileMenuLainnyaOverlay');
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'mobileMenuLainnyaOverlay';
-                modal.className = 'fixed inset-0 z-[100] modal-overlay transition-opacity duration-300 flex flex-col justify-end';
-                modal.setAttribute('data-state', 'closed');
-                modal.style.opacity = '0';
-                modal.style.pointerEvents = 'none';
-                let canClose = false;
-                setTimeout(() => canClose = true, 400); // Mencegah ghost click atau double tap menutup modal
-                modal.addEventListener('click', (e) => { 
-                    if(e.target === modal && canClose) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.closeMenuLainnya(); 
-                    }
-                });
+            if (modal) return modal; // Sudah ada, jangan buat ulang
 
-                const gridMenus = appMenus.filter(m => !['dashboard', 'presensi', 'siswa', 'nilai'].includes(m.id));
-                const gridHtml = gridMenus.map(m => {
-                    let badgeHtml = '';
-                    if (m.id === 'pesan') {
-                        const unreadCount = Math.max(0, (db.pesan_info ? db.pesan_info.length : 0) - (db.pengaturan && db.pengaturan.read_pesan_count ? db.pengaturan.read_pesan_count : 0));
-                        if (unreadCount > 0) {
-                            badgeHtml = `<span class="absolute -top-1 -right-2 bg-amber-400 text-slate-900 text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-sm">${unreadCount}</span>`;
-                        }
+            modal = document.createElement('div');
+            modal.id = 'mobileMenuLainnyaOverlay';
+            modal.className = 'fixed inset-0 z-[100] modal-overlay transition-opacity duration-300 flex flex-col justify-end';
+            modal.setAttribute('data-state', 'closed');
+            modal.style.cssText = 'opacity:0; pointer-events:none;';
+
+            // Listener untuk menutup saat klik area overlay (di luar konten)
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal && window._menuLainnyaOpen) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.closeMenuLainnya();
+                }
+            });
+            modal.addEventListener('touchend', (e) => {
+                if (e.target === modal && window._menuLainnyaOpen) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.closeMenuLainnya();
+                }
+            }, { passive: false });
+
+            const gridMenus = appMenus.filter(m => !['dashboard', 'presensi', 'siswa', 'nilai'].includes(m.id));
+            const gridHtml = gridMenus.map(m => {
+                let badgeHtml = '';
+                if (m.id === 'pesan') {
+                    const unreadCount = Math.max(0, (db.pesan_info ? db.pesan_info.length : 0) - (db.pengaturan && db.pengaturan.read_pesan_count ? db.pengaturan.read_pesan_count : 0));
+                    if (unreadCount > 0) {
+                        badgeHtml = `<span class="absolute -top-1 -right-2 bg-amber-400 text-slate-900 text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-sm">${unreadCount}</span>`;
                     }
-                    return `
-                        <div onclick="window.closeMenuLainnya(); window.navigateTo('${m.id}')" class="flex flex-col items-center gap-3 cursor-pointer group py-2">
-                            <div class="relative flex items-center justify-center transition-transform transform group-hover:scale-110">
-                                <i class="fas ${m.icon} text-3xl text-primary-500"></i>
-                                ${badgeHtml}
-                            </div>
-                            <span class="text-[11px] font-medium text-slate-700 text-center leading-tight w-full">${m.name}</span>
+                }
+                return `
+                    <div data-nav-target="${m.id}" class="flex flex-col items-center gap-3 cursor-pointer group py-2">
+                        <div class="relative flex items-center justify-center transition-transform transform group-hover:scale-110">
+                            <i class="fas ${m.icon} text-3xl text-primary-500"></i>
+                            ${badgeHtml}
                         </div>
-                    `;
-                }).join('');
-
-                modal.innerHTML = `
-                  <div class="bg-white w-full rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transform transition-transform duration-300 translate-y-full flex flex-col" style="max-height: 85vh;" id="mobileMenuLainnyaContent">
-                    <div class="p-6 pb-2">
-                      <div class="flex items-center gap-3 mb-4">
-                        <i class="fas fa-th text-navy-900 text-xl"></i>
-                        <h3 class="font-bold text-navy-900 text-xl">Menu Lainnya</h3>
-                      </div>
-                      <button onclick="window.closeMenuLainnya()" class="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors">
-                        <i class="fas fa-times text-sm"></i>
-                      </button>
+                        <span class="text-[11px] font-medium text-slate-700 text-center leading-tight w-full">${m.name}</span>
                     </div>
-                    <div class="p-6 pt-4 overflow-y-auto custom-scrollbar flex-1 pb-12">
-                       <div class="grid grid-cols-3 gap-y-8 gap-x-2">
-                          ${gridHtml}
-                       </div>
-                    </div>
-                  </div>
                 `;
-                document.body.appendChild(modal);
-            }
-            
+            }).join('');
+
+            modal.innerHTML = `
+              <div class="bg-white w-full rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transform transition-transform duration-300 translate-y-full flex flex-col" style="max-height: 85vh;" id="mobileMenuLainnyaContent">
+                <div class="p-6 pb-2 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <i class="fas fa-th text-navy-900 text-xl"></i>
+                    <h3 class="font-bold text-navy-900 text-xl">Menu Lainnya</h3>
+                  </div>
+                  <button type="button" id="btnCloseMenuLainnya" class="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-sm transition-colors">
+                    <i class="fas fa-times text-sm"></i>
+                  </button>
+                </div>
+                <div class="p-6 pt-4 overflow-y-auto custom-scrollbar flex-1 pb-12">
+                   <div class="grid grid-cols-3 gap-y-8 gap-x-2" id="menuLainnyaGrid">
+                      ${gridHtml}
+                   </div>
+                </div>
+              </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Event listener untuk tombol close (X)
+            document.getElementById('btnCloseMenuLainnya').addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.closeMenuLainnya();
+            });
+
+            // Event delegation untuk item-item grid menu
+            document.getElementById('menuLainnyaGrid').addEventListener('click', (e) => {
+                const item = e.target.closest('[data-nav-target]');
+                if (!item) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const targetId = item.getAttribute('data-nav-target');
+                // Tutup dulu dengan animasi, navigasi setelahnya
+                window.closeMenuLainnya(() => {
+                    window.navigateTo(targetId);
+                });
+            });
+
+            return modal;
+        }
+
+        window.openMenuLainnya = () => {
+            // Jika sudah terbuka, jangan buka lagi
+            if (window._menuLainnyaOpen) return;
+            window._menuLainnyaOpen = true;
+
+            const modal = _createMenuLainnyaModal();
+
+            // Tampilkan overlay
             modal.style.opacity = '1';
             modal.style.pointerEvents = 'auto';
             modal.setAttribute('data-state', 'open');
+
+            // Animasi slide-up konten
             requestAnimationFrame(() => {
-                const content = document.getElementById('mobileMenuLainnyaContent');
-                if (content) content.style.transform = 'translateY(0)';
+                requestAnimationFrame(() => {
+                    const content = document.getElementById('mobileMenuLainnyaContent');
+                    if (content) content.style.transform = 'translateY(0)';
+                });
             });
         };
 
-        window.closeMenuLainnya = () => {
+        window.closeMenuLainnya = (callback) => {
+            if (!window._menuLainnyaOpen) {
+                if (typeof callback === 'function') callback();
+                return;
+            }
+            window._menuLainnyaOpen = false;
+
             const modal = document.getElementById('mobileMenuLainnyaOverlay');
             if (modal) {
                 const content = document.getElementById('mobileMenuLainnyaContent');
@@ -319,7 +390,10 @@
                     modal.style.opacity = '0';
                     modal.style.pointerEvents = 'none';
                     modal.setAttribute('data-state', 'closed');
-                }, 300);
+                    if (typeof callback === 'function') callback();
+                }, 320);
+            } else {
+                if (typeof callback === 'function') callback();
             }
         };
 
@@ -10531,6 +10605,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
             }
             
             renderSidebar(); 
+            // Hanya update tampilan bottom nav (tidak rebuild) - aman untuk modal
             renderBottomNav();
             
             let extraHeader = '';
@@ -10763,6 +10838,13 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
 
         // --- Boot App ---
         async function bootApp() {
+            // Guard: mencegah bootApp dijalankan lebih dari sekali
+            if (window._bootAppExecuted) {
+                console.log('[DEBUG] bootApp sudah pernah dijalankan, skip.');
+                return;
+            }
+            window._bootAppExecuted = true;
+
             if (window.currentUser && window.currentUser.email) {
                 DB_KEY = 'manajemenWaliKelasDB_' + window.currentUser.email.replace(/[^a-zA-Z0-9]/g, '_');
             }
@@ -11893,7 +11975,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
 
         // bootApp dipanggil dari login handler atau DOMContentLoaded jika sudah login
         try {
-            if (window.currentUser) {
+            if (window.currentUser && !window._bootAppExecuted) {
                 bootApp();
                 setTimeout(() => { injectFloatingChat(); }, 500); // Inject after boot
             }
