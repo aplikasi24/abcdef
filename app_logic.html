@@ -10683,7 +10683,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                 extraHeader = `
                     <div class="mt-4 md:mt-0 flex-1 flex flex-col sm:flex-row justify-end items-end sm:items-center gap-2 sm:gap-3">
                         <div class="flex items-center justify-end gap-2 flex-nowrap w-full sm:w-auto">
-                            <button id="install-app-btn" onclick="window.handleInstallApp()" class="bg-orange-500 text-white border border-orange-600 h-10 sm:h-11 px-3 sm:px-4 rounded-xl shadow-sm hover:bg-orange-600 transition flex items-center gap-1 sm:gap-2 print-hide whitespace-nowrap" title="Instal Aplikasi">
+                            <button id="install-app-btn" onclick="window.handleInstallApp()" class="hidden bg-orange-500 text-white border border-orange-600 h-10 sm:h-11 px-3 sm:px-4 rounded-xl shadow-sm hover:bg-orange-600 transition flex items-center gap-1 sm:gap-2 print-hide whitespace-nowrap" title="Instal Aplikasi">
                                 <i class="fas fa-download"></i> <span class="text-xs sm:text-sm font-bold">Instal App</span>
                             </button>
                             <button onclick="window.toggleFullScreen()" class="bg-white border border-gray-200 w-10 h-10 sm:w-11 sm:h-11 rounded-xl shadow-sm hover:shadow transition flex items-center justify-center print-hide shrink-0" title="Layar Penuh">
@@ -10832,7 +10832,19 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
             if (menuId === 'dashboard') {
                 setTimeout(() => {
                     if (window.renderDashboardCharts) window.renderDashboardCharts();
-                    // Tombol install selalu ditampilkan sekarang
+                    
+                    // Cek apakah mode standalone (sudah terinstal)
+                    const installBtn = document.getElementById('install-app-btn');
+                    if (installBtn) {
+                        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                        const isChromium = window.chrome !== undefined || /Chrome|Edge|Edg|SamsungBrowser/i.test(navigator.userAgent);
+                        
+                        if (!isStandalone) {
+                            if (!isChromium || window.deferredPrompt) {
+                                installBtn.classList.remove('hidden');
+                            }
+                        }
+                    }
                 }, 50);
             }
 
