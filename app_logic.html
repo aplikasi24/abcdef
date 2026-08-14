@@ -39,25 +39,37 @@
                 window.deferredPrompt = null;
             } else {
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        title: 'Instal Aplikasi',
-                        html: `
-                            <div class="text-left text-sm space-y-3">
-                                <p>Browser/perangkat ini memerlukan instalasi manual. Ikuti panduan berikut:</p>
-                                <ul class="list-disc pl-5 space-y-1">
-                                    <li><b>Safari (iPhone/iPad):</b> Ketuk tombol Share <i class="fas fa-share-square"></i> di bawah layar, lalu pilih <b>"Tambahkan ke Layar Utama"</b> (Add to Home Screen).</li>
-                                    <li><b>Chrome/Android:</b> Ketuk ikon titik tiga (⋮) di pojok kanan atas, lalu pilih <b>"Tambahkan ke Layar Utama"</b>.</li>
-                                    <li><b>Firefox:</b> Ketuk ikon titik tiga (⋮) lalu pilih <b>"Instal"</b> atau <b>"Tambahkan ke Pintasan"</b>.</li>
-                                    <li><b>PC/Laptop:</b> Klik ikon unduh <i class="fas fa-download"></i> di sebelah kanan bilah alamat (address bar) browser Anda.</li>
-                                </ul>
-                            </div>
-                        `,
-                        icon: 'info',
-                        confirmButtonText: 'Tutup',
-                        confirmButtonColor: '#3b82f6'
-                    });
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    
+                    if (isIOS) {
+                        Swal.fire({
+                            title: 'Instal di iPhone',
+                            html: '<p class="text-sm">Untuk menginstal di iPhone, buka aplikasi ini di <b>Safari</b>, ketuk tombol <b>Share</b> <i class="fas fa-share-square"></i> di bawah layar, lalu pilih <b>"Tambahkan ke Layar Utama"</b>.</p>',
+                            icon: 'info',
+                            confirmButtonText: 'Mengerti',
+                            confirmButtonColor: '#3b82f6'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Buka di Google Chrome',
+                            html: '<p class="text-sm">Browser ini tidak mendukung instalasi otomatis. Untuk menginstal, aplikasi harus dibuka menggunakan browser <b>Google Chrome</b>.</p>',
+                            icon: 'info',
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fab fa-chrome"></i> Buka di Chrome',
+                            cancelButtonText: 'Tutup',
+                            confirmButtonColor: '#10b981',
+                            cancelButtonColor: '#64748b'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Redirect to Chrome using Android Intent
+                                const domain = window.location.host;
+                                const path = window.location.pathname;
+                                window.location.href = `intent://${domain}${path}#Intent;scheme=https;package=com.android.chrome;end`;
+                            }
+                        });
+                    }
                 } else {
-                    alert("Untuk menginstal: Buka menu browser Anda lalu pilih 'Tambahkan ke Layar Utama' (Add to Home Screen).");
+                    alert("Untuk menginstal, silakan buka aplikasi ini menggunakan browser Google Chrome.");
                 }
             }
         };
