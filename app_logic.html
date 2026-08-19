@@ -11159,6 +11159,43 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
             }
         };
 
+        window.hapusRiwayatPK = (studentId, itemId, rIndex) => {
+            if(typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Hapus Cicilan?',
+                    text: 'Riwayat pembayaran ini akan dihapus dan total tagihan akan disesuaikan.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#94a3b8',
+                    confirmButtonText: 'Ya, Hapus',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) processHapus();
+                });
+            } else {
+                if(confirm('Yakin ingin menghapus riwayat pembayaran ini?')) processHapus();
+            }
+
+            function processHapus() {
+                let pk = db.pembayaran_kelas;
+                if(!pk.riwayat_bayar[studentId] || !pk.riwayat_bayar[studentId][itemId]) return;
+                
+                let deletedNominal = pk.riwayat_bayar[studentId][itemId][rIndex].nominal;
+                pk.riwayat_bayar[studentId][itemId].splice(rIndex, 1);
+                
+                if(pk.transaksi[studentId] && pk.transaksi[studentId][itemId]) {
+                    pk.transaksi[studentId][itemId] -= deletedNominal;
+                    if(pk.transaksi[studentId][itemId] < 0) pk.transaksi[studentId][itemId] = 0;
+                }
+                
+                saveDB();
+                let existing = document.getElementById('modal-bayar-pk');
+                if (existing) existing.remove();
+                window.bukaModalBayarPK(studentId);
+            }
+        };
+
         window.bukaModalBayarPK = (studentId) => {
             let pk = db.pembayaran_kelas;
             const student = db.students.find(s => String(s.id) === String(studentId));
@@ -11201,7 +11238,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                     riwayat = [{ tgl: oldTgl, nominal: terbayar }];
                 }
 
-                let riwayatHtml = riwayat.map(r => {
+                let riwayatHtml = riwayat.map((r, rIndex) => {
                     let formattedTgl = r.tgl;
                     if(formattedTgl && formattedTgl.includes('-')) {
                         let parts = formattedTgl.split('-');
@@ -11210,7 +11247,10 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                     return `
                     <div class="flex justify-between items-center bg-white p-2 rounded border border-slate-100 mb-1 text-xs">
                         <div class="text-slate-500"><i class="far fa-calendar-alt mr-1"></i>${formattedTgl}</div>
-                        <div class="font-bold text-slate-700">Rp ${r.nominal.toLocaleString('id-ID')}</div>
+                        <div class="font-bold text-slate-700 flex items-center">
+                            Rp ${r.nominal.toLocaleString('id-ID')}
+                            <button onclick="window.hapusRiwayatPK('${studentId}', '${item.id}', ${rIndex})" class="text-red-400 hover:text-red-600 ml-3 transition" title="Hapus Pembayaran"><i class="fas fa-times-circle"></i></button>
+                        </div>
                     </div>
                 `}).join('');
 
