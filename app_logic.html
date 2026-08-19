@@ -11027,9 +11027,10 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
         // --- Modals Pembayaran Kelas ---
         window.bukaModalKelolaItemPK = () => {
             let pk = db.pembayaran_kelas;
-            let itemHtml = pk.items.map(item => `
-                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 mb-2">
-                    <div>
+            let itemHtml = pk.items.map((item, index) => `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 mb-2 relative">
+                    <div class="absolute -left-2 -top-2 w-6 h-6 bg-indigo-500 text-white font-bold rounded-full flex items-center justify-center text-xs shadow-sm border-2 border-white">${index + 1}</div>
+                    <div class="ml-3">
                         <div class="font-bold text-slate-700">${item.name}</div>
                         <div class="text-sm text-indigo-600 font-bold">Rp ${parseInt(item.nominal).toLocaleString('id-ID')}</div>
                     </div>
@@ -11215,7 +11216,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
 
             let todayStr = new Date().toLocaleDateString('en-CA');
 
-            let formHtml = pk.items.map(item => {
+            let formHtml = pk.items.map((item, index) => {
                 let terbayar = pk.transaksi[studentId][item.id] ? parseInt(pk.transaksi[studentId][item.id]) : 0;
                 let kurang = parseInt(item.nominal) - terbayar;
                 let isLunas = kurang <= 0;
@@ -11272,8 +11273,9 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                 }
 
                 return `
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div class="flex justify-between items-center mb-2">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 relative">
+                    <div class="absolute -left-2 -top-2 w-6 h-6 bg-indigo-500 text-white font-bold rounded-full flex items-center justify-center text-xs shadow-sm border-2 border-white">${index + 1}</div>
+                    <div class="flex justify-between items-center mb-2 ml-3">
                         <div class="font-bold text-slate-700 text-sm">${item.name} <span class="text-xs text-slate-400 font-normal ml-1">(Rp ${parseInt(item.nominal).toLocaleString('id-ID')})</span></div>
                         <div id="badge_kurang_${item.id}" class="text-xs ${badgeClass} px-2 py-1 rounded font-bold">
                             ${badgeHtml}
@@ -11355,7 +11357,7 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
             let totalHarus = 0;
             let totalBayar = 0;
 
-            let rincianHtml = pk.items.map(item => {
+            let rincianHtml = pk.items.map((item, index) => {
                 let nominal = parseInt(item.nominal);
                 let terbayar = (pk.transaksi[studentId] && pk.transaksi[studentId][item.id]) ? parseInt(pk.transaksi[studentId][item.id]) : 0;
                 let kurang = nominal - terbayar;
@@ -11394,18 +11396,21 @@ Pastikan tulisan nama hari beserta daftar nama siswanya sesuai data di atas dima
                 `}).join('') + `</div>` : '';
 
                 return `
-                <div class="py-2 border-b border-slate-100 last:border-0 text-sm">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="font-bold text-slate-700">${item.name}</div>
-                            <div class="text-xs text-slate-400">Tarif: Rp ${nominal.toLocaleString('id-ID')}</div>
-                        </div>
+                <div class="py-2 border-b border-slate-100 last:border-0 text-sm flex items-start gap-3">
+                    <div class="mt-1 w-5 h-5 bg-indigo-100 text-indigo-700 font-bold rounded-full flex items-center justify-center text-[10px] shrink-0">${index + 1}</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-bold text-slate-700">${item.name}</div>
+                                <div class="text-xs text-slate-400">Tarif: Rp ${nominal.toLocaleString('id-ID')}</div>
+                            </div>
                         <div class="text-right">
                             <div>${statusHtml}</div>
                             <div class="text-xs text-slate-500 mt-0.5">Total Bayar: Rp ${terbayar.toLocaleString('id-ID')}</div>
                         </div>
                     </div>
                     ${riwayatHtml}
+                    </div>
                 </div>
                 `;
             }).join('');
